@@ -1,2 +1,2 @@
 An embedded chatroom
-I like QML
+I don't like QML.
