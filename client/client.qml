@@ -14,62 +14,83 @@ ApplicationWindow {
 
     Column {
         anchors.fill: parent
+        spacing: 0
 
         // 聊天记录显示区域
         ScrollView {
             id: chatArea
-            anchors.fill: parent
-            height: parent.height - 60
+            anchors.horizontalCenter: parent.horizontalCenter
+            width: parent.width
+            height: parent.height - inputArea.height
             clip: true
 
-            Column {
+            ListView {
+                id: messageList
                 width: parent.width
-                spacing: 10
-                Repeater {
-                    model: chatClient.messages
-                    delegate: Rectangle {
-                        width: parent.width - 20
-                        height: implicitHeight
-                        color: "lightblue"
-                        radius: 10
-                        Text {
-                            text: modelData
-                            wrapMode: Text.Wrap
-                            padding: 10
-                        }
+                height: parent.height
+                model: chatClient.messages
+                spacing: 20
+                // padding: 10
+                clip: true
+                interactive: true
+
+                onContentHeightChanged: {
+                    messageList.positionViewAtEnd()
+                }
+
+                delegate: Rectangle {
+                    width: parent.width - 20
+                    height: implicitHeight
+                    color: index % 2 === 0 ? "#DDEEFF" : "#FFDDEE"
+                    radius: 10
+
+                    Text {
+                         text: modelData
+                         wrapMode: Text.Wrap
+                         padding: 20
+                         anchors.fill: parent
+                         anchors.margins: 5
                     }
                 }
             }
         }
 
         // 输入框和发送按钮
-        Row {
-            height: 60
+        Rectangle{
+            id: inputArea
             width: parent.width
-            spacing: 10
-            padding: 10
+            height: 60
+            color: "#F0F0F0"
+            border.color: "#CCCCCC"
 
-            TextField {
-                id: inputField
-                placeholderText: "Type a message..."
-                anchors.verticalCenter: parent.verticalCenter
-                width: parent.width - sendButton.width - 20
-            }
+            Row {
+                spacing: 10
+                anchors.fill: parent
+                anchors.margins: 10
 
-            Button {
-                id: sendButton
-                text: "Send"
-                anchors.verticalCenter: parent.verticalCenter
-                onClicked: {
-                    if (inputField.text.trim() !== "") {
-                        chatClient.sendMessage(inputField.text)
-                        inputField.text = ""
+                TextField {
+                    id: inputField
+                    placeholderText: "Type a message..."
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: parent.width - sendButton.width - 30
+                    height: parent.height - 20
+                }
+
+                Button {
+                    id: sendButton
+                    text: "Send"
+                    anchors.verticalCenter: parent.verticalCenter
+                    height: inputField.height
+                    onClicked: {
+                        if (inputField.text.trim() !== "") {
+                           chatClient.sendMessage(inputField.text)
+                           inputField.text = ""
+                        }
                     }
                 }
             }
         }
     }
-
     onClosing: {
         console.log("Application is closing")
     }

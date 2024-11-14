@@ -1,12 +1,15 @@
 #ifndef CLIENT_H
 #define CLIENT_H
 
+#include <QHostAddress>
+#include <QList>
 #include <QObject>
 #include <QString>
-#include <QList>
+#include <QStringList>
+#include <QTcpSocket>
 
 class Client : public QObject {
-      Q_OBJECT
+  Q_OBJECT
   Q_PROPERTY(QStringList messages READ messages NOTIFY messagesChanged)
 
 public:
@@ -19,9 +22,13 @@ public:
 signals:
   void messagesChanged();
 
+private slots:
+  void onConnected();
+  void onMessageReceived();
+
 private:
   QStringList m_messages;
-
+  QTcpSocket *socket;
 };
 
 #endif // CLIENT_H
