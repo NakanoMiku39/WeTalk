@@ -16,6 +16,19 @@ ApplicationWindow {
         anchors.fill: parent
         spacing: 0
 
+        Rectangle {
+            width: parent.width
+            height: 40
+            color: "#E0E0E0"
+            border.color: "#B0B0B0"
+
+            Text {
+                 text: "Status " + chatClient.status
+                 anchors.centerIn: parent
+                 font.pixelSize: 14
+            }
+        }
+
         // 聊天记录显示区域
         ScrollView {
             id: chatArea

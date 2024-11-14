@@ -11,6 +11,7 @@
 class Client : public QObject {
   Q_OBJECT
   Q_PROPERTY(QStringList messages READ messages NOTIFY messagesChanged)
+  Q_PROPERTY(QString status READ status NOTIFY statusChanged)
 
 public:
   explicit Client(QObject *parent = nullptr);
@@ -18,15 +19,20 @@ public:
   Q_INVOKABLE void sendMessage(const QString &message);
 
   QStringList messages() const;
+  QString status() const;
 
 signals:
   void messagesChanged();
+  void statusChanged();
 
 private slots:
   void onConnected();
+  void onDisconnected();
+  void onErrorOccurred(QAbstractSocket::SocketError socketError);
   void onMessageReceived();
 
 private:
+  QString m_status;
   QStringList m_messages;
   QTcpSocket *socket;
 };
