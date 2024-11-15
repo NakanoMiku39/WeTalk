@@ -134,6 +134,7 @@ void *server(void *arg) {
   clients[fd].client_fd = fd;
 
   printf("存放clients[fd].client_fd = %d\n", clients[fd].client_fd);
+
   sprintf(ts, "[system]热烈欢迎 %s 进入群聊\n", clients[fd].name);
   send_all(ts);
 
@@ -142,6 +143,7 @@ void *server(void *arg) {
     int recv_size = read(fd, clients[fd].buf, sizeof(buf));
 
     // 收到退出请求
+
     if (recv_size <= 0 || strncmp(clients[fd].buf, "[CMD] ", 6) == 0)) {
       sprintf(ts, "[system]欢送 %s 离开群聊\n", clients[fd].name);
 
@@ -172,6 +174,7 @@ void *server(void *arg) {
     // 处理普通消息
     if (recv_size > 0) {
       // 单独发送或者群发
+
       // if (NULL != strstr(clients[fd].buf, "send")) { // 单独发
       //   char str[100];
       //   char *p[10] = {0};
@@ -195,8 +198,7 @@ void *server(void *arg) {
         	send_all(buf);
         	memset(buf, 0, BUF_SIZE);
         	memset(clients[fd].buf, 0, BUF_SIZE);
-		}
-		else if(strncmp(clients[fd].buf, "[VIDEO] ", 8) == 0){
+		} else if(strncmp(clients[fd].buf, "[VIDEO] ", 8) == 0){
 			printf("[system]接收到视频数据\n");
 			const char *video_data = clients[fd].buf + 8;
 			handle_video(fd, video_data, recv_size - 8);
