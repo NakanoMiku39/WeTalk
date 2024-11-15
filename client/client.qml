@@ -16,6 +16,7 @@ ApplicationWindow {
         anchors.fill: parent
         spacing: 0
 
+        // Status bar
         Rectangle {
             width: parent.width
             height: 40
@@ -26,6 +27,48 @@ ApplicationWindow {
                  text: "Status " + chatClient.status
                  anchors.centerIn: parent
                  font.pixelSize: 14
+            }
+        }
+
+        Row {
+            width: parent.width
+            height: 40
+            spacing: 10
+            padding: 10
+            Rectangle {
+                width: 150
+                height: parent.height
+                border.color: "#CCCCCC"
+                color: "#FFFFFF"
+
+                TextField {
+                    id: ipField
+                    placeholderText: "Enter Server IP"
+                    anchors.fill: parent
+                    text: "127.0.0.1"
+                }
+            }
+
+            Rectangle {
+                width: 80
+                height: parent.height
+                border.color: "#CCCCCC"
+                color: "#FFFFFF"
+
+                TextField {
+                    id: portField
+                    placeholderText: "Port"
+                    anchors.fill: parent
+                    text: "6666"
+                    inputMethodHints: Qt.ImhDigitsOnly
+                }
+            }
+
+            Button {
+                text: "Connect"
+                onClicked: {
+                    chatClient.connectToServer(ipField.text, parseInt(portField.text))
+                }
             }
         }
 

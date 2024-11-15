@@ -1,6 +1,6 @@
 #include "client.h"
 
-Client::Client(QObject *parent) : QObject(parent) {
+Client::Client(QObject *parent) : QObject(parent), m_status("Disconnected") {
   socket = new QTcpSocket(this);
 
   connect(socket, &QTcpSocket::connected, this, &Client::onConnected);
@@ -8,7 +8,17 @@ Client::Client(QObject *parent) : QObject(parent) {
   connect(socket, &QTcpSocket::readyRead, this, &Client::onMessageReceived);
   connect(socket, &QTcpSocket::errorOccurred, this, &Client::onErrorOccurred);
 
-  socket->connectToHost(QHostAddress("127.0.0.1"), 6666);
+  // socket->connectToHost(QHostAddress("127.0.0.1"), 6666);
+}
+
+void Client::connectToServer(const QString &ip, quint16 port) {
+  if(socket->state() != QTcpSocket::UnconnectedState) {
+    socket->disconnectFromHost();
+  }
+
+  socket->connectToHost(QHostAddress(ip), port);
+  m_status = "Connecting...";
+  emit statusChanged();
 }
 
 QStringList Client::messages() const {

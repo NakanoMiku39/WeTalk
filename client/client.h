@@ -16,6 +16,7 @@ class Client : public QObject {
 public:
   explicit Client(QObject *parent = nullptr);
 
+  Q_INVOKABLE void connectToServer(const QString &ip, quint16 port);
   Q_INVOKABLE void sendMessage(const QString &message);
 
   QStringList messages() const;
