@@ -1,0 +1,6 @@
+set(CMAKE_C_COMPILER aarch64-none-linux-gnu-gcc)
+set(CMAKE_SYSTEM_NAME Linux)
+set(CMAKE_SYSTEM_VERSION 1)
+set(CMAKE_CXX_COMPILER aarch64-none-linux-gnu-g++)
+set(CMAKE_SYSROOT /home/student/aarch64-buildroot-linux-gnu_sdk-buildroot/aarch64-buildroot-linux-gnu/sysroot)
+set(Qt6_DIR /home/student/aarch64-buildroot-linux-gnu_sdk-buildroot/aarch64-buildroot-linux-gnu/sysroot/usr/lib/cmake/Qt6)
