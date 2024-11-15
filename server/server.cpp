@@ -98,93 +98,75 @@ void *send_one(char *buf, int fd)
 }
  
 // 服务端接收函数
-void *server(void *arg)
-{
- 
-	int fd = *(int *)arg;
-	char buf[BUF_SIZE];
-	char name[BUF_SIZE], ts[BUF_SIZE];
-	
-	
- 
-	// 获取昵称
-	read(fd, clients[fd].name, sizeof(name));
-	clients[fd].client_fd = fd;
- 
-	// printf("clients[fd].name = %s\n", clients[fd].name);
-	printf("存放clients[fd].client_fd = %d\n", clients[fd].client_fd);
-	sprintf(ts, "[system]热烈欢迎 %s 进入群聊", clients[fd].name);
-	send_all(ts);
- 
-	for (;;)
-	{
-		// 接收信息,无信息时将阻塞
-		int recv_size = read(fd, clients[fd].buf, sizeof(buf));
- 
-		
-		// 收到退出信息
-		if ( NULL != strstr(clients[fd].buf, "quit"))
-		{
-			sprintf(ts, "[system]欢送 %s 离开群聊\n", clients[fd].name);
-			int index = 0;
-			// 找到要退出的那个人，并将其置为-1
-			for (; index < SEM_SIZE; index++)
-			{
-				if (cli_fd[index] == fd)
-				{
-					cli_fd[index] = -1;
-					break;
-				}
-			}
-			// 群发XXX退出聊天室提示消息
-			send_all(ts);
- 
-			// 群友退出，信号量+1
-			int n;
-			sem_post(&sem);
-			sem_getvalue(&sem, &n);
- 
-			printf("[system] %s 离开群聊,群聊还剩%d人\n", clients[fd].name, SEM_SIZE - n);
-			strcpy(clients[fd].buf, "quit");
- 
-			write(fd, clients[fd].buf, strlen(clients[fd].buf) + 1);
-			close(fd);
-			pthread_exit(NULL);
-		}
- 
-		// 单独发送或者群发
-		//    ------/send name message
-		if ( NULL != strstr(clients[fd].buf, "send"))// 单独发
-		{ 	
-			char str[100];
-			char *p[10]={0};
-			int num=0,i;
-			//拷贝
-			strcpy(str,clients[fd].buf);
-			// printf("clients[fd].buf1 = %s\n", clients[fd].buf); //send name message
-			// 对 clients[fd].buf进行截取
-			split(clients[fd].buf,":",p,&num);
-			// printf("clients[fd].buf1 = %s\n", clients[fd].buf); //send
-			// printf("split str is = %s\n",p[1]);
-			// 然后遍历数组进行比较 找到和name相同的数组元素，取出来进行发送
-			for(i = 0;i < SEM_SIZE; i++) {
- 
- 
-                                // 判断名字，去除对应client_fd进行发送
-				if(NULL != strstr(clients[i].name,p[2])){
-					printf("client[%d].name3 = %s\n",i,clients[i].name);
-					char msg[200];
-					sprintf(msg,"[悄悄话]%s:%s",clients[fd].name,p[3]);
-					send_one(msg, clients[i].client_fd);
-                                }
-                        }
-		}
-		else
-		{ // 群发
-			send_all(clients[fd].buf);
-		}
-	}
+void *server(void *arg) {
+  int fd = *(int *)arg;
+  char buf[BUF_SIZE];
+  char name[BUF_SIZE], ts[BUF_SIZE];
+
+  // 获取昵称
+  read(fd, clients[fd].name, sizeof(name));
+  clients[fd].client_fd = fd;
+
+  printf("存放clients[fd].client_fd = %d\n", clients[fd].client_fd);
+  sprintf(ts, "[system]热烈欢迎 %s 进入群聊", clients[fd].name);
+  send_all(ts);
+
+  for (;;) {
+    // 接收信息,无信息时将阻塞
+    int recv_size = read(fd, clients[fd].buf, sizeof(buf));
+
+    // 收到退出请求
+    if (recv_size <= 0 || NULL != strstr(clients[fd].buf, "exit_request")) {
+      sprintf(ts, "[system]欢送 %s 离开群聊\n", clients[fd].name);
+
+      int index = 0;
+      for (; index < SEM_SIZE; index++) {
+        if (cli_fd[index] == fd) {
+          cli_fd[index] = -1;
+          break;
+        }
+      }
+
+      // 群发XXX退出聊天室提示消息
+      send_all(ts);
+
+      // 群友退出，信号量+1
+      int n;
+      sem_post(&sem);
+      sem_getvalue(&sem, &n);
+
+      printf("[system] %s 离开群聊,群聊还剩%d人\n", clients[fd].name, SEM_SIZE - n);
+      strcpy(clients[fd].buf, "exit_request");
+
+      write(fd, clients[fd].buf, strlen(clients[fd].buf) + 1);
+      close(fd);
+      pthread_exit(NULL);
+    }
+
+    // 处理普通消息
+    if (recv_size > 0) {
+      // 单独发送或者群发
+      if (NULL != strstr(clients[fd].buf, "send")) { // 单独发
+        char str[100];
+        char *p[10] = {0};
+        int num = 0, i;
+        strcpy(str, clients[fd].buf);
+
+        split(clients[fd].buf, ":", p, &num);
+        for (i = 0; i < SEM_SIZE; i++) {
+          if (NULL != strstr(clients[i].name, p[2])) {
+            char msg[200];
+            sprintf(msg, "[悄悄话]%s:%s", clients[fd].name, p[3]);
+            send_one(msg, clients[i].client_fd);
+          }
+        }
+      } else { // 群发
+        send_all(clients[fd].buf);
+      }
+    }
+  }
 }
+
  
 /**
  * quit
@@ -227,7 +209,7 @@ int main()
 	struct sockaddr_in addr = {};
 	addr.sin_family = AF_INET;
 	addr.sin_port = htons(6666);
-	addr.sin_addr.s_addr = inet_addr("127.0.0.1");
+	addr.sin_addr.s_addr = inet_addr("0.0.0.0");
 	socklen_t addrlen = sizeof(addr);
  
 	// 绑定socket对象与地址
