@@ -3,3 +3,4 @@
 *.log
 tmp/
 client/build/
+server/server
