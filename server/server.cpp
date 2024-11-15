@@ -143,7 +143,7 @@ void *server(void *arg) {
 
     // 收到退出请求
 
-    if (recv_size <= 0 || strncmp(clients[fd].buf, "[CMD] ", 6) == 0)) {
+    if (recv_size <= 0 || strncmp(clients[fd].buf, "[CMD] ", 6) == 0) {
       sprintf(ts, "[system]欢送 %s 离开群聊\n", clients[fd].name);
 
       int index = 0;
@@ -199,7 +199,7 @@ void *server(void *arg) {
 
 		} else if(strncmp(clients[fd].buf, "[VIDEO] ", 8) == 0){
 			printf("[system]接收到视频数据\n");
-			const char *video_data = clients[fd].buf + 8;
+			char *video_data = clients[fd].buf + 8;
 			handle_video(fd, video_data, recv_size - 8);
 		}
       // }
