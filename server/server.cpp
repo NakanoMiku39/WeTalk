@@ -71,6 +71,7 @@ void split(char *src, const char *separator, char **dest, int *num)
 }
  
 // 群发函数
+
 void *send_all(char *buf)
 {
 	for (int i = 0; i < SEM_SIZE; i++)
@@ -84,7 +85,6 @@ void *send_all(char *buf)
 		}
 	}
 }
- 
 /**
  * 发送给指定的用户
  * char *buf 发送的消息
@@ -123,7 +123,7 @@ void *server(void *arg)
  
 		
 		// 收到退出信息
-		if (0 >= recv || NULL != strstr(clients[fd].buf, "quit"))
+		if ( NULL != strstr(clients[fd].buf, "quit"))
 		{
 			sprintf(ts, "[system]欢送 %s 离开群聊\n", clients[fd].name);
 			int index = 0;
@@ -154,7 +154,7 @@ void *server(void *arg)
  
 		// 单独发送或者群发
 		//    ------/send name message
-		if (0 >= recv || NULL != strstr(clients[fd].buf, "send"))// 单独发
+		if ( NULL != strstr(clients[fd].buf, "send"))// 单独发
 		{ 	
 			char str[100];
 			char *p[10]={0};
