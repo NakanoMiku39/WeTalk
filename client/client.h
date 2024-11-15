@@ -12,6 +12,7 @@ class Client : public QObject {
   Q_OBJECT
   Q_PROPERTY(QStringList messages READ messages NOTIFY messagesChanged)
   Q_PROPERTY(QString status READ status NOTIFY statusChanged)
+  Q_PROPERTY(bool connected READ connected NOTIFY connectedChanged)
 
 public:
   explicit Client(QObject *parent = nullptr);
@@ -21,10 +22,12 @@ public:
 
   QStringList messages() const;
   QString status() const;
+  bool connected() const;
 
 signals:
   void messagesChanged();
   void statusChanged();
+  void connectedChanged();
 
 private slots:
   void onConnected();
@@ -36,6 +39,7 @@ private:
   QString m_status;
   QStringList m_messages;
   QTcpSocket *socket;
+  bool m_connected;
 };
 
 #endif // CLIENT_H

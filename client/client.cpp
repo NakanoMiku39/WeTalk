@@ -29,6 +29,10 @@ QString Client::status() const {
   return m_status;
 }
 
+bool Client::connected() const {
+  return m_connected;
+}
+
 void Client::sendMessage(const QString &message) {
   if(socket->state() == QTcpSocket::ConnectedState) {
     QString formattedMessage = message + "\n";
@@ -39,8 +43,9 @@ void Client::sendMessage(const QString &message) {
 
 void Client::onConnected() {
   m_status = "Connected";
+  m_connected = true;
   emit statusChanged();
-
+  emit connectedChanged();
   // Sending inital message such as username
   QString initialMessage = "ClientName";
   socket->write(initialMessage.toUtf8());
@@ -48,12 +53,16 @@ void Client::onConnected() {
 
 void Client::onDisconnected() {
   m_status = "Disconnected";
+  m_connected = false;
   emit statusChanged();
+  emit connectedChanged();
 }
 
 void Client::onErrorOccurred(QAbstractSocket::SocketError socketError) {
   m_status = "Error: " + socket->errorString();
+  m_connected = false;
   emit statusChanged();
+  emit connectedChanged();
 }
 
 void Client::onMessageReceived() {

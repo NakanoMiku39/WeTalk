@@ -6,149 +6,133 @@ ApplicationWindow {
     visible: true
     width: 400
     height: 600
-    title: "Chat Interface"
+    title: "Chat Client"
 
     Client {
         id: chatClient
     }
 
-    Column {
-        anchors.fill: parent
-        spacing: 0
+    StackView {
+        id: mainStack
+        anchors.fill: parent // 确保填满窗口
 
-        // Status bar
-        Rectangle {
-            width: parent.width
-            height: 40
-            color: "#E0E0E0"
-            border.color: "#B0B0B0"
+        // 初始界面
+        initialItem: Rectangle {
+            width: mainStack.width // 绑定到 mainStack 的宽度
+            height: mainStack.height // 绑定到 mainStack 的高度
 
-            Text {
-                 text: "Status " + chatClient.status
-                 anchors.centerIn: parent
-                 font.pixelSize: 14
-            }
-        }
-
-        Row {
-            width: parent.width
-            height: 40
-            spacing: 10
-            padding: 10
-            Rectangle {
-                width: 150
-                height: parent.height
-                border.color: "#CCCCCC"
-                color: "#FFFFFF"
+            Column {
+                spacing: 10
+                anchors.centerIn: parent
 
                 TextField {
                     id: ipField
                     placeholderText: "Enter Server IP"
-                    anchors.fill: parent
                     text: "127.0.0.1"
                 }
-            }
-
-            Rectangle {
-                width: 80
-                height: parent.height
-                border.color: "#CCCCCC"
-                color: "#FFFFFF"
 
                 TextField {
                     id: portField
-                    placeholderText: "Port"
-                    anchors.fill: parent
+                    placeholderText: "Enter Port"
                     text: "6666"
                     inputMethodHints: Qt.ImhDigitsOnly
                 }
-            }
-
-            Button {
-                text: "Connect"
-                onClicked: {
-                    chatClient.connectToServer(ipField.text, parseInt(portField.text))
-                }
-            }
-        }
-
-        // 聊天记录显示区域
-        ScrollView {
-            id: chatArea
-            anchors.horizontalCenter: parent.horizontalCenter
-            width: parent.width
-            height: parent.height - inputArea.height
-            clip: true
-
-            ListView {
-                id: messageList
-                width: parent.width
-                height: parent.height
-                model: chatClient.messages
-                spacing: 20
-                // padding: 10
-                clip: true
-                interactive: true
-
-                onContentHeightChanged: {
-                    messageList.positionViewAtEnd()
-                }
-
-                delegate: Rectangle {
-                    width: parent.width - 20
-                    height: implicitHeight
-                    color: index % 2 === 0 ? "#DDEEFF" : "#FFDDEE"
-                    radius: 10
-
-                    Text {
-                         text: modelData
-                         wrapMode: Text.Wrap
-                         padding: 20
-                         anchors.fill: parent
-                         anchors.margins: 5
-                    }
-                }
-            }
-        }
-
-        // 输入框和发送按钮
-        Rectangle{
-            id: inputArea
-            width: parent.width
-            height: 60
-            color: "#F0F0F0"
-            border.color: "#CCCCCC"
-
-            Row {
-                spacing: 10
-                anchors.fill: parent
-                anchors.margins: 10
-
-                TextField {
-                    id: inputField
-                    placeholderText: "Type a message..."
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: parent.width - sendButton.width - 30
-                    height: parent.height - 20
-                }
 
                 Button {
-                    id: sendButton
-                    text: "Send"
-                    anchors.verticalCenter: parent.verticalCenter
-                    height: inputField.height
+                    text: "Connect"
                     onClicked: {
-                        if (inputField.text.trim() !== "") {
-                           chatClient.sendMessage(inputField.text)
-                           inputField.text = ""
+                        chatClient.connectToServer(ipField.text, parseInt(portField.text))
+                    }
+                }
+
+                Text {
+                    text: chatClient.status
+                    color: chatClient.connected ? "green" : "red"
+                }
+            }
+        }
+    }
+
+    Connections {
+        target: chatClient
+
+        function onConnectedChanged() {
+            if (chatClient.connected) {
+                mainStack.push(chatScreen)
+            }
+        }
+    }
+
+    // 聊天界面
+    Component {
+        id: chatScreen
+
+        Rectangle {
+            width: mainStack.width // 绑定到 mainStack 的宽度
+            height: mainStack.height // 绑定到 mainStack 的高度
+
+            Column {
+                anchors.fill: parent
+                spacing: 0
+
+                // 状态栏
+                Rectangle {
+                    width: parent.width
+                    height: 40
+                    color: "#E0E0E0"
+
+                    Text {
+                        text: "Status: " + chatClient.status
+                        anchors.centerIn: parent
+                    }
+                }
+
+                // 聊天记录
+                ScrollView {
+                    id: chatArea
+                    anchors.fill: parent
+                    height: parent.height - inputArea.height - 40
+
+                    ListView {
+                        id: messageList
+                        width: parent.width
+                        height: parent.height
+                        model: chatClient.messages
+                        delegate: Text {
+                            text: modelData
+                        }
+                    }
+                }
+
+                // 输入区域
+                Rectangle {
+                    id: inputArea
+                    width: parent.width
+                    height: 60
+                    color: "#F0F0F0"
+
+                    Row {
+                        spacing: 10
+                        anchors.fill: parent
+                        anchors.margins: 10
+
+                        TextField {
+                            id: inputField
+                            placeholderText: "Type a message..."
+                            width: parent.width - sendButton.width - 20
+                        }
+
+                        Button {
+                            id: sendButton
+                            text: "Send"
+                            onClicked: {
+                                chatClient.sendMessage(inputField.text)
+                                inputField.text = ""
+                            }
                         }
                     }
                 }
             }
         }
     }
-    onClosing: {
-        console.log("Application is closing")
-    }
-
 }
