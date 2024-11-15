@@ -109,7 +109,6 @@ void *send_all(char *buf)
 			write(cli_fd[i], buf, strlen(buf) + 1);
 		}
 	}
-
 }
 /**
  * 发送给指定的用户
@@ -134,7 +133,6 @@ void *server(void *arg) {
   clients[fd].client_fd = fd;
 
   printf("存放clients[fd].client_fd = %d\n", clients[fd].client_fd);
-
   sprintf(ts, "[system]热烈欢迎 %s 进入群聊\n", clients[fd].name);
   send_all(ts);
 
