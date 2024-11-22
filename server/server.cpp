@@ -109,6 +109,7 @@ void *send_all(char *buf)
 			write(cli_fd[i], buf, strlen(buf) + 1);
 		}
 	}
+
 }
 /**
  * 发送给指定的用户
@@ -172,7 +173,6 @@ void *server(void *arg) {
     // 处理普通消息
     if (recv_size > 0) {
       // 单独发送或者群发
-
       // if (NULL != strstr(clients[fd].buf, "send")) { // 单独发
       //   char str[100];
       //   char *p[10] = {0};
@@ -196,6 +196,7 @@ void *server(void *arg) {
         	send_all(buf);
         	memset(buf, 0, BUF_SIZE);
         	memset(clients[fd].buf, 0, BUF_SIZE);
+
 		} else if(strncmp(clients[fd].buf, "[VIDEO] ", 8) == 0){
 			printf("[system]接收到视频数据\n");
 			const char *video_data = clients[fd].buf + 8;
