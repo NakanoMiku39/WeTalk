@@ -29,6 +29,31 @@ struct client
  
 struct client clients[SEM_SIZE];
  
+void handle_video(int fd, char *data, int data_size) {
+    char video_data[BUF_SIZE];
+    int total_received = 0;
+
+    // 接收完整视频数据
+    while (total_received < data_size) {
+        int bytes = read(fd, video_data + total_received, BUF_SIZE - total_received);
+        if (bytes <= 0) {
+            perror("视频数据接收失败");
+            return;
+        }
+        total_received += bytes;
+    }
+
+    // 转发视频数据给其他客户端
+    for (int i = 0; i < SEM_SIZE; i++) {
+        if (cli_fd[i] != -1 && cli_fd[i] != fd) {
+            write(cli_fd[i], "[VIDEO]", strlen("[VIDEO]"));
+            write(cli_fd[i], video_data, total_received);
+        }
+    }
+}
+
+
+
 // 字符串分割函数
 void split(char *src, const char *separator, char **dest, int *num)
 {
@@ -117,7 +142,7 @@ void *server(void *arg) {
     int recv_size = read(fd, clients[fd].buf, sizeof(buf));
 
     // 收到退出请求
-    if (recv_size <= 0 || NULL != strstr(clients[fd].buf, "exit_request")) {
+    if (recv_size <= 0 || strncmp(clients[fd].buf, "[CMD] ", 6) == 0)) {
       sprintf(ts, "[system]欢送 %s 离开群聊\n", clients[fd].name);
 
       int index = 0;
@@ -163,10 +188,19 @@ void *server(void *arg) {
       //   }
       // } else {
           // 群发
-        sprintf(buf, "%s: %s", clients[fd].name, clients[fd].buf);
-        send_all(buf);
-        memset(buf, 0, BUF_SIZE);
-        memset(clients[fd].buf, 0, BUF_SIZE);
+		if(strncmp(clients[fd].buf, "[TEXT] ", 7) == 0){
+			const char *text_message = clients[fd].buf + 7;
+			char buf[BUF_SIZE];
+        	sprintf(buf, "%s: %s", clients[fd].name, text_message);
+        	send_all(buf);
+        	memset(buf, 0, BUF_SIZE);
+        	memset(clients[fd].buf, 0, BUF_SIZE);
+		}
+		else if(strncmp(clients[fd].buf, "[VIDEO] ", 8) == 0){
+			printf("[system]接收到视频数据\n");
+			const char *video_data = clients[fd].buf + 8;
+			handle_video(fd, video_data, recv_size - 8);
+		}
       // }
     }
   }
