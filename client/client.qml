@@ -171,6 +171,14 @@ ApplicationWindow {
                                 }
 
                                 Button {
+                                    id: videoButton
+                                    text: "Record Video"
+                                    onClicked: {
+                                    chatClient.recordAndSendVideo("/dev/video0")
+                                    }
+                                }
+
+                                Button {
                                     id: exitButton
                                     text: "Exit"
                                     onClicked: {

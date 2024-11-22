@@ -2,6 +2,7 @@
 
 Client::Client(QObject *parent) : QObject(parent), m_status("Disconnected") {
   socket = new QTcpSocket(this);
+  videoRecorder = new QProcess(this);
 
   connect(socket, &QTcpSocket::connected, this, &Client::onConnected);
   connect(socket, &QTcpSocket::disconnected, this, &Client::onDisconnected);
@@ -39,10 +40,37 @@ bool Client::connected() const {
 
 void Client::sendMessage(const QString &message) {
   if(socket->state() == QTcpSocket::ConnectedState) {
-    QString formattedMessage = message + "\n";
+    QString formattedMessage = "[TEXT] " + message + "\n";
     socket->write(formattedMessage.toUtf8());
   }
 
+}
+
+void Client::recordAndSendVideo(const QString &device) {
+  QString outputFile = "video_output.mp4";
+  QString command = "ffmpeg";
+  QStringList args = {"-y", "-f", "v412", "-i", device, "-t", "5", outputFile };
+
+  videoRecorder->start(command, args);
+  connect(videoRecorder, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), this, [=](int exitCode, QProcess::ExitStatus status) {
+    if(exitCode == 0) {
+      sendVideo(outputFile);
+    }
+  });
+}
+
+void Client::sendVideo(const QString &filePath) {
+  QFile file(filePath);
+  if(!file.open(QIODevice::ReadOnly)) {
+    qDebug() << "Failed to open video file.";
+    return;
+  }
+
+  QByteArray videoData = file.readAll();
+  file.close();
+
+  QByteArray header = QString("[VIDEO] ").toUtf8();
+  socket->write(header + videoData);
 }
 
 void Client::onConnected() {
