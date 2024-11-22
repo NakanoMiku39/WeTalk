@@ -14,12 +14,12 @@ ApplicationWindow {
 
     StackView {
         id: mainStack
-        anchors.fill: parent // 确保填满窗口
+        anchors.fill: parent // 填满窗口
 
         // 初始界面
         initialItem: Rectangle {
-            width: mainStack.width // 绑定到 mainStack 的宽度
-            height: mainStack.height // 绑定到 mainStack 的高度
+            width: mainStack.width
+            height: mainStack.height
 
             Column {
                 spacing: 10
@@ -68,12 +68,12 @@ ApplicationWindow {
         id: chatScreen
 
         Rectangle {
-            width: mainStack.width // 绑定到 mainStack 的宽度
-            height: mainStack.height // 绑定到 mainStack 的高度
+            width: mainStack.width
+            height: mainStack.height
 
             Column {
-                anchors.fill: parent
                 spacing: 0
+                anchors.fill: parent
 
                 // 状态栏
                 Rectangle {
@@ -87,47 +87,90 @@ ApplicationWindow {
                     }
                 }
 
-                // 聊天记录
-                ScrollView {
-                    id: chatArea
-                    anchors.fill: parent
-                    height: parent.height - inputArea.height - 40
-
-                    ListView {
-                        id: messageList
-                        width: parent.width
-                        height: parent.height
-                        model: chatClient.messages
-                        delegate: Text {
-                            text: modelData
-                        }
-                    }
-                }
-
-                // 输入区域
+                // 聊天记录和输入框
                 Rectangle {
-                    id: inputArea
-                    width: parent.width
-                    height: 60
-                    color: "#F0F0F0"
+                    id: chatContainer
+                    anchors.fill: parent
+                    anchors.topMargin: 40
+                    color: "#FFFFFF"
 
-                    Row {
-                        spacing: 10
+                    Column {
+                        spacing: 0
                         anchors.fill: parent
-                        anchors.margins: 10
 
-                        TextField {
-                            id: inputField
-                            placeholderText: "Type a message..."
-                            width: parent.width - sendButton.width - 20
+                        // 聊天记录
+                        ScrollView {
+                            id: chatArea
+                            width: parent.width
+                            height: parent.height - inputArea.height
+                            clip: true
+
+                            ListView {
+                                id: messageList
+                                width: parent.width
+                                height: parent.height
+                                model: chatClient.messages
+                                spacing: 10
+
+                                // 自动滚动到底部
+                                Component.onCompleted: positionViewAtEnd()
+                                onContentHeightChanged: positionViewAtEnd()
+
+                                delegate: Rectangle {
+                                    width: parent.width - 20
+                                    height: implicitHeight
+                                    color: index % 2 === 0 ? "#DDEEFF" : "#FFDDEE"
+                                    radius: 10
+
+                                    Text {
+                                        text: modelData
+                                        wrapMode: Text.Wrap
+                                        padding: 10
+                                        anchors.fill: parent
+                                        anchors.margins: 5
+                                    }
+                                }
+                            }
                         }
 
-                        Button {
-                            id: sendButton
-                            text: "Send"
-                            onClicked: {
-                                chatClient.sendMessage(inputField.text)
-                                inputField.text = ""
+                        // 输入区域
+                        Rectangle {
+                            id: inputArea
+                            width: parent.width
+                            height: 60
+                            color: "#F0F0F0"
+                            border.color: "#CCCCCC"
+
+                            Row {
+                                spacing: 10
+                                anchors.fill: parent
+                                anchors.margins: 10
+
+                                TextField {
+                                    id: inputField
+                                    placeholderText: "Type a message..."
+                                    width: parent.width - sendButton.width - exitButton.width - 40
+                                }
+
+                                Button {
+                                    id: sendButton
+                                    text: "Send"
+                                    onClicked: {
+                                        if (inputField.text.trim() !== "") {
+                                            chatClient.sendMessage(inputField.text)
+                                            inputField.text = ""
+                                        }
+                                    }
+                                }
+
+                                Button {
+                                    id: exitButton
+                                    text: "Exit"
+                                    onClicked: {
+                                        chatClient.sendMessage("quit")
+                                        Qt.quit() // 退出应用
+                                    }
+                                }
                             }
                         }
                     }
