@@ -84,6 +84,7 @@ void *send_all(char *buf)
 			write(cli_fd[i], buf, strlen(buf) + 1);
 		}
 	}
+
 }
 /**
  * 发送给指定的用户
@@ -108,7 +109,7 @@ void *server(void *arg) {
   clients[fd].client_fd = fd;
 
   printf("存放clients[fd].client_fd = %d\n", clients[fd].client_fd);
-  sprintf(ts, "[system]热烈欢迎 %s 进入群聊", clients[fd].name);
+  sprintf(ts, "[system]热烈欢迎 %s 进入群聊\n", clients[fd].name);
   send_all(ts);
 
   for (;;) {
@@ -146,23 +147,27 @@ void *server(void *arg) {
     // 处理普通消息
     if (recv_size > 0) {
       // 单独发送或者群发
-      if (NULL != strstr(clients[fd].buf, "send")) { // 单独发
-        char str[100];
-        char *p[10] = {0};
-        int num = 0, i;
-        strcpy(str, clients[fd].buf);
+      // if (NULL != strstr(clients[fd].buf, "send")) { // 单独发
+      //   char str[100];
+      //   char *p[10] = {0};
+      //   int num = 0, i;
+      //   strcpy(str, clients[fd].buf);
 
-        split(clients[fd].buf, ":", p, &num);
-        for (i = 0; i < SEM_SIZE; i++) {
-          if (NULL != strstr(clients[i].name, p[2])) {
-            char msg[200];
-            sprintf(msg, "[悄悄话]%s:%s", clients[fd].name, p[3]);
-            send_one(msg, clients[i].client_fd);
-          }
-        }
-      } else { // 群发
-        send_all(clients[fd].buf);
-      }
+      //   split(clients[fd].buf, ":", p, &num);
+      //   for (i = 0; i < SEM_SIZE; i++) {
+      //     if (NULL != strstr(clients[i].name, p[2])) {
+      //       char msg[200];
+      //       sprintf(msg, "[悄悄话]%s:%s", clients[fd].name, p[3]);
+      //       send_one(msg, clients[i].client_fd);
+      //     }
+      //   }
+      // } else {
+          // 群发
+        sprintf(buf, "%s: %s", clients[fd].name, clients[fd].buf);
+        send_all(buf);
+        memset(buf, 0, BUF_SIZE);
+        memset(clients[fd].buf, 0, BUF_SIZE);
+      // }
     }
   }
 }
