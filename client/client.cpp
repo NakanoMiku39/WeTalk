@@ -11,6 +11,10 @@ Client::Client(QObject *parent) : QObject(parent), m_status("Disconnected") {
   // socket->connectToHost(QHostAddress("127.0.0.1"), 6666);
 }
 
+void Client::setUsername(const QString &username) {
+  m_username = username;
+}
+
 void Client::connectToServer(const QString &ip, quint16 port) {
   if(socket->state() != QTcpSocket::UnconnectedState) {
     socket->disconnectFromHost();
@@ -47,7 +51,7 @@ void Client::onConnected() {
   emit statusChanged();
   emit connectedChanged();
   // Sending inital message such as username
-  QString initialMessage = "ClientName";
+  QString initialMessage = m_username;
   socket->write(initialMessage.toUtf8());
 }
 
@@ -67,7 +71,7 @@ void Client::onErrorOccurred(QAbstractSocket::SocketError socketError) {
 
 void Client::onMessageReceived() {
   while(socket->canReadLine()) {
-    QString line = socket->readLine().trimmed();
+    QString line = QString::fromUtf8(socket->readLine()).trimmed();
     m_messages.append(line);
     emit messagesChanged();
   }

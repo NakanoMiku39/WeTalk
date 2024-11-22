@@ -26,6 +26,12 @@ ApplicationWindow {
                 anchors.centerIn: parent
 
                 TextField {
+                    id: usernameField
+                    placeholderText: "Enter Username"
+                    text: "User"
+                }
+
+                TextField {
                     id: ipField
                     placeholderText: "Enter Server IP"
                     text: "127.0.0.1"
@@ -41,6 +47,7 @@ ApplicationWindow {
                 Button {
                     text: "Connect"
                     onClicked: {
+                        chatClient.setUsername(usernameField.text)
                         chatClient.connectToServer(ipField.text, parseInt(portField.text))
                     }
                 }

@@ -17,6 +17,7 @@ class Client : public QObject {
 public:
   explicit Client(QObject *parent = nullptr);
 
+  Q_INVOKABLE void setUsername(const QString &username);
   Q_INVOKABLE void connectToServer(const QString &ip, quint16 port);
   Q_INVOKABLE void sendMessage(const QString &message);
 
@@ -37,6 +38,7 @@ private slots:
 
 private:
   QString m_status;
+  QString m_username;
   QStringList m_messages;
   QTcpSocket *socket;
   bool m_connected;
