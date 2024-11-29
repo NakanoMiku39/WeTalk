@@ -1,5 +1,6 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
+// import QtMultimedia 6.5
 import com.example.chat 1.0
 
 ApplicationWindow {
@@ -34,7 +35,7 @@ ApplicationWindow {
                 TextField {
                     id: ipField
                     placeholderText: "Enter Server IP"
-                    text: "127.0.0.1"
+                    text: "192.168.0.101"
                 }
 
                 TextField {
@@ -144,7 +145,7 @@ ApplicationWindow {
                         Rectangle {
                             id: inputArea
                             width: parent.width
-                            height: 60
+                            height: 80
                             color: "#F0F0F0"
                             border.color: "#CCCCCC"
 
@@ -156,12 +157,13 @@ ApplicationWindow {
                                 TextField {
                                     id: inputField
                                     placeholderText: "Type a message..."
-                                    width: parent.width - sendButton.width - exitButton.width - 40
+                                    width: parent.width * 0.5
                                 }
 
                                 Button {
                                     id: sendButton
                                     text: "Send"
+                                    width: parent.width * 0.2
                                     onClicked: {
                                         if (inputField.text.trim() !== "") {
                                             chatClient.sendMessage(inputField.text)
@@ -173,14 +175,16 @@ ApplicationWindow {
                                 Button {
                                     id: videoButton
                                     text: "Record Video"
+                                    width: parent.width * 0.2
                                     onClicked: {
-                                    chatClient.recordAndSendVideo("/dev/video0")
+                                        chatClient.recordAndSendVideo();
                                     }
                                 }
 
                                 Button {
                                     id: exitButton
                                     text: "Exit"
+                                    width: parent.width * 0.2
                                     onClicked: {
                                         chatClient.sendMessage("quit")
                                         Qt.quit() // 退出应用

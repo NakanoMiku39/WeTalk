@@ -22,7 +22,9 @@ public:
   Q_INVOKABLE void setUsername(const QString &username);
   Q_INVOKABLE void connectToServer(const QString &ip, quint16 port);
   Q_INVOKABLE void sendMessage(const QString &message);
-  Q_INVOKABLE void recordAndSendVideo(const QString &device);
+  Q_INVOKABLE void recordAndSendVideo();
+  Q_INVOKABLE void receiveVideoData(const QString &prefix, const QByteArray &data);
+  Q_INVOKABLE void startVideoPreview();
 
   QStringList messages() const;
   QString status() const;
@@ -42,7 +44,7 @@ private slots:
 private:
   void sendVideo(const QString &filePath);
 
-  QProcess* videoRecorder;
+  QProcess* videoProcess;
   QString m_status;
   QString m_username;
   QStringList m_messages;

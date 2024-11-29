@@ -2,7 +2,7 @@
 
 Client::Client(QObject *parent) : QObject(parent), m_status("Disconnected") {
   socket = new QTcpSocket(this);
-  videoRecorder = new QProcess(this);
+  videoProcess = new QProcess(this);
 
   connect(socket, &QTcpSocket::connected, this, &Client::onConnected);
   connect(socket, &QTcpSocket::disconnected, this, &Client::onDisconnected);
@@ -46,13 +46,21 @@ void Client::sendMessage(const QString &message) {
 
 }
 
-void Client::recordAndSendVideo(const QString &device) {
+void Client::startVideoPreview() {
+  QString device = "/dev/video0";
+  QString previewCommand = "ffplay";
+  QStringList previewArgs = {"-f", "v412", "-i", device};
+
+  videoProcess->start(previewCommand, previewArgs);
+}
+
+void Client::recordAndSendVideo() {
   QString outputFile = "video_output.mp4";
   QString command = "ffmpeg";
-  QStringList args = {"-y", "-f", "v412", "-i", device, "-t", "5", outputFile };
+  QStringList args = {"-y", "-f", "v4l2", "-input_format", "mjpeg", "-i", "/dev/video0", "-t", "10", outputFile };
 
-  videoRecorder->start(command, args);
-  connect(videoRecorder, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), this, [=](int exitCode, QProcess::ExitStatus status) {
+  videoProcess->start(command, args);
+  connect(videoProcess, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), this, [=](int exitCode, QProcess::ExitStatus status) {
     if(exitCode == 0) {
       sendVideo(outputFile);
     }
@@ -60,17 +68,37 @@ void Client::recordAndSendVideo(const QString &device) {
 }
 
 void Client::sendVideo(const QString &filePath) {
-  QFile file(filePath);
-  if(!file.open(QIODevice::ReadOnly)) {
-    qDebug() << "Failed to open video file.";
-    return;
-  }
+    QFile file(filePath);
+    if (!file.open(QIODevice::ReadOnly)) {
+        qDebug() << "Failed to open video file.";
+        return;
+    }
 
-  QByteArray videoData = file.readAll();
-  file.close();
+    QByteArray header = QString("[VIDEO] ").toUtf8();
+    socket->write(header); // 先发送 [VIDEO] 前缀
 
-  QByteArray header = QString("[VIDEO] ").toUtf8();
-  socket->write(header + videoData);
+    // 分块发送视频数据
+    while (!file.atEnd()) {
+        QByteArray chunk = file.read(4096); // 每次读取 4 KB 数据
+        socket->write(chunk);
+        socket->flush(); // 确保数据立即发送
+    }
+
+    file.close();
+    qDebug() << "Video data sent.";
+}
+
+void Client::receiveVideoData(const QString &prefix, const QByteArray &data) {
+  printf("Video Received\n");
+    QFile videoFile("received_video.mp4");
+    if(videoFile.open(QIODevice::WriteOnly)) {
+      videoFile.write(data);
+      videoFile.close();
+      qDebug() << "Video saved to received_video.mp4";
+      m_messages.append("Received a video and saved it.");
+      emit messagesChanged();
+    }
+
 }
 
 void Client::onConnected() {
@@ -99,8 +127,16 @@ void Client::onErrorOccurred(QAbstractSocket::SocketError socketError) {
 
 void Client::onMessageReceived() {
   while(socket->canReadLine()) {
-    QString line = QString::fromUtf8(socket->readLine()).trimmed();
-    m_messages.append(line);
-    emit messagesChanged();
+    QByteArray line = socket->readLine();
+    if(line.startsWith("[VIDEO] ")) {
+      QByteArray videoData = line.mid(8);
+      receiveVideoData("[VIDEO] ", videoData);
+    } else {
+      QString text = QString::fromUtf8(line).trimmed();
+      m_messages.append(text);
+      emit messagesChanged();
+    }
+
+
   }
 }

@@ -9,7 +9,7 @@
 #include <pthread.h>
 #include <semaphore.h>
 #include <signal.h>
-#define BUF_SIZE (4096)
+#define BUF_SIZE (40960)
 #define SEM_SIZE (20) // 群聊上限人数
  
 // 信号量--判断群聊人数
@@ -28,30 +28,53 @@ struct client
 };
  
 struct client clients[SEM_SIZE];
- 
-void handle_video(int fd, char *data, int data_size) {
-    char video_data[BUF_SIZE];
-    int total_received = 0;
 
-    // 接收完整视频数据
-    while (total_received < data_size) {
-        int bytes = read(fd, video_data + total_received, BUF_SIZE - total_received);
-        if (bytes <= 0) {
-            perror("视频数据接收失败");
-            return;
-        }
-        total_received += bytes;
+
+void handle_video(int fd, char *data, int initial_size) {
+    FILE *file = fopen("received_video.mp4", "wb");
+    if (!file) {
+        perror("Failed to open file for writing");
+        return;
     }
 
-    // 转发视频数据给其他客户端
+    // 初始接收到的数据去掉 "[VIDEO] " 前缀
+    int total_received = initial_size - 8;
+    fwrite(data + 8, 1, total_received, file);
+
+    // 继续接收剩余数据
+    char buffer[BUF_SIZE];
+    int bytes_received;
+    while ((bytes_received = read(fd, buffer, BUF_SIZE)) > 0) {
+        fwrite(buffer, 1, bytes_received, file);
+    }
+
+    if (bytes_received < 0) {
+        perror("Error while receiving video data");
+    }
+
+    fclose(file);
+    printf("[system] Video saved as received_video.mp4\n");
+
+    // 转发给其他客户端
     for (int i = 0; i < SEM_SIZE; i++) {
         if (cli_fd[i] != -1 && cli_fd[i] != fd) {
-            write(cli_fd[i], "[VIDEO]", strlen("[VIDEO]"));
-            write(cli_fd[i], video_data, total_received);
+            write(cli_fd[i], "[VIDEO] ", strlen("[VIDEO] "));
+            FILE *video_file = fopen("received_video.mp4", "rb");
+            if (!video_file) {
+                perror("Failed to open video file for forwarding");
+                continue;
+            }
+
+            while (!feof(video_file)) {
+                size_t read_bytes = fread(buffer, 1, BUF_SIZE, video_file);
+                write(cli_fd[i], buffer, read_bytes);
+            }
+
+            fclose(video_file);
         }
     }
+    printf("[system] Video forwarded to other clients\n");
 }
-
 
 
 // 字符串分割函数
@@ -199,8 +222,7 @@ void *server(void *arg) {
 
 		} else if(strncmp(clients[fd].buf, "[VIDEO] ", 8) == 0){
 			printf("[system]接收到视频数据\n");
-			char *video_data = clients[fd].buf + 8;
-			handle_video(fd, video_data, recv_size - 8);
+			handle_video(fd, clients[fd].buf, recv_size);
 		}
       // }
     }
