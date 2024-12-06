@@ -2,5 +2,6 @@
 .idea
 *.log
 tmp/
-client/build/
+client/build*
 server/server
+server/*.mp4

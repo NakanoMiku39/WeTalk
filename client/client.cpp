@@ -74,17 +74,26 @@ void Client::sendVideo(const QString &filePath) {
         return;
     }
 
-    QByteArray header = QString("[VIDEO] ").toUtf8();
-    socket->write(header); // 先发送 [VIDEO] 前缀
 
-    // 分块发送视频数据
+qint64 fileSize = file.size();  // Get the size of the file
+    QByteArray header = "[VIDEO]";  // VIDEO prefix
+    QByteArray sizeHeader = QByteArray::number(fileSize) + ";";  // Append delimiter after the size
+
+    socket->write(header);  // Send [VIDEO] prefix
+    socket->flush();
+    socket->write(sizeHeader);  // Send the size of the video followed by a delimiter
+    socket->flush();
+    qDebug() << "Header: " << header;
+    qDebug() << "sizeHeader: " << sizeHeader;
+    // Send the video data in chunks
     while (!file.atEnd()) {
-        QByteArray chunk = file.read(4096); // 每次读取 4 KB 数据
+        QByteArray chunk = file.read(4096);  // Read 4 KB at a time
         socket->write(chunk);
-        socket->flush(); // 确保数据立即发送
+        socket->flush();  // Ensure data is sent immediately
     }
 
-    file.close();
+        file.close();
+    // Send the [/VIDEO] suffix
     qDebug() << "Video data sent.";
 }
 
@@ -128,9 +137,9 @@ void Client::onErrorOccurred(QAbstractSocket::SocketError socketError) {
 void Client::onMessageReceived() {
   while(socket->canReadLine()) {
     QByteArray line = socket->readLine();
-    if(line.startsWith("[VIDEO] ")) {
-      QByteArray videoData = line.mid(8);
-      receiveVideoData("[VIDEO] ", videoData);
+    if(line.startsWith("[VIDEO]")) {
+      QByteArray videoData = line.mid(7);
+      receiveVideoData("[VIDEO]", videoData);
     } else {
       QString text = QString::fromUtf8(line).trimmed();
       m_messages.append(text);

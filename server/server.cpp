@@ -9,7 +9,9 @@
 #include <pthread.h>
 #include <semaphore.h>
 #include <signal.h>
-#define BUF_SIZE (40960)
+#include <ctype.h>
+#include <cmath>
+#define BUF_SIZE (4096)
 #define SEM_SIZE (20) // 群聊上限人数
  
 // 信号量--判断群聊人数
@@ -37,42 +39,102 @@ void handle_video(int fd, char *data, int initial_size) {
         return;
     }
 
-    // 初始接收到的数据去掉 "[VIDEO] " 前缀
-    int total_received = initial_size - 8;
-    fwrite(data + 8, 1, total_received, file);
-
-    // 继续接收剩余数据
-    char buffer[BUF_SIZE];
-    int bytes_received;
-    while ((bytes_received = read(fd, buffer, BUF_SIZE)) > 0) {
-        fwrite(buffer, 1, bytes_received, file);
+    char buffer[BUF_SIZE];  // Ensure there's space for null termination
+    int bytes_read = read(fd, buffer, BUF_SIZE); // Read video length
+    if (bytes_read <= 0) {
+        perror("Failed to read from socket");
+        fclose(file);
+        return;
     }
 
-    if (bytes_received < 0) {
-        perror("Error while receiving video data");
+    // buffer[bytes_read] = '\0';  // Null-terminate the buffer for string operations
+    printf("Bytes_read: %d\n", bytes_read);
+    printf("What's in buffer: %s\n", buffer);
+    // Locate the delimiter to find the end of the size string
+
+    // int length_bytes_read = read(fd, buffer, BUF_SIZE);
+    // printf("Length_bytes_read: %d\n", bytes_read);
+    // printf("What's in buffer: %s\n", buffer);
+    char* delimiterPosition = strchr(buffer, ';');
+    if (!delimiterPosition) {
+        perror("Delimiter not found in the buffer");
+        fclose(file);
+        return;
     }
 
-    fclose(file);
-    printf("[system] Video saved as received_video.mp4\n");
+    *delimiterPosition = '\0';  // Replace delimiter with NULL to terminate the size string
+    char* sizeStr = buffer;  // Start of the size string just after prefix
+    int videoSize = atoi(sizeStr);  // Convert size string to integer
 
-    // 转发给其他客户端
-    for (int i = 0; i < SEM_SIZE; i++) {
-        if (cli_fd[i] != -1 && cli_fd[i] != fd) {
-            write(cli_fd[i], "[VIDEO] ", strlen("[VIDEO] "));
-            FILE *video_file = fopen("received_video.mp4", "rb");
-            if (!video_file) {
-                perror("Failed to open video file for forwarding");
-                continue;
+    char* startOfVideoData = delimiterPosition + 1;  // Start of video data right after the delimiter
+    int videoDataInFirstBuffer = bytes_read - (startOfVideoData - buffer);  // Calculate the length of video data in the first buffer
+
+    // Write any video data from the first buffer
+    if (videoDataInFirstBuffer > 0) {
+        fwrite(startOfVideoData, 1, videoDataInFirstBuffer, file);
+    }
+
+    int chunk_count = 0;
+    int total_chunks = videoSize / BUF_SIZE + (videoSize % BUF_SIZE > 0);
+
+    printf("Total_chunks: %d\n", total_chunks);
+    // Continue reading the rest of the video data
+
+
+while (chunk_count < total_chunks) {
+        memset(buffer, 0, BUF_SIZE);
+        printf("Ready to read chunk %d\n", chunk_count);
+bytes_read = read(fd, buffer, BUF_SIZE);
+        printf("Finish reading chunk %d\n", chunk_count);
+        // if (bytes_read > 0) {
+            int bytesToWrite = bytes_read;
+            // if (totalBytesRead + bytesToWrite > videoSize) {
+            //     bytesToWrite = videoSize - totalBytesRead;  // Adjust the last chunk size
+            // }
+            printf("Ready to write chunk %d\n", chunk_count);
+fwrite(buffer, 1, bytesToWrite, file);
+ printf("Finish writing chunk %d\n", chunk_count);
+            // totalBytesRead += bytesToWrite;
+            if(chunk_count == 0 || chunk_count == 1 || chunk_count == 2 || chunk_count == 3 || chunk_count == 10) printf("%b\n", *buffer);
+            if(chunk_count == total_chunks - 1) {
+                printf("%b\n", *buffer);
             }
+            chunk_count++;
+        // } else if (bytes_read < 0) {
+        //     perror("Error reading video data");
+        //     break;
 
+    // }
+    }
+printf("Chunk_count: %d\n", chunk_count);
+fclose(file);
+    printf("[system] Video saved as received_video.mp4\n");
+    // Forward the received video to other clients
+    FILE *video_file = fopen("received_video.mp4", "rb");
+    if (!video_file) {
+        perror("Failed to open video file for forwarding");
+        return;
+    }
+
+    for (int i = 0; i < SEM_SIZE; i++) {
+        if (cli_fd[i] != -1 /*&& cli_fd[i] != fd*/) {
+            write(cli_fd[i], "[VIDEO]", strlen("[VIDEO]"));
+
+            rewind(video_file);  // Reset file pointer for each client
             while (!feof(video_file)) {
                 size_t read_bytes = fread(buffer, 1, BUF_SIZE, video_file);
-                write(cli_fd[i], buffer, read_bytes);
+                if (read_bytes > 0) {
+                    write(cli_fd[i], buffer, read_bytes);
+                }
+                if (ferror(video_file)) {
+                    perror("Error while reading video file for forwarding");
+                    break;
+                }
             }
-
-            fclose(video_file);
         }
     }
+
+    fclose(video_file);
     printf("[system] Video forwarded to other clients\n");
 }
 
@@ -163,7 +225,7 @@ void *server(void *arg) {
   for (;;) {
     // 接收信息,无信息时将阻塞
     int recv_size = read(fd, clients[fd].buf, sizeof(buf));
-
+    printf("What did I recieved from clients: %s\n", clients[fd].buf);
     // 收到退出请求
 
     if (recv_size <= 0 || strncmp(clients[fd].buf, "[CMD] ", 6) == 0) {
@@ -220,8 +282,9 @@ void *server(void *arg) {
         	memset(buf, 0, BUF_SIZE);
         	memset(clients[fd].buf, 0, BUF_SIZE);
 
-		} else if(strncmp(clients[fd].buf, "[VIDEO] ", 8) == 0){
+		} else if(strncmp(clients[fd].buf, "[VIDEO]", 7) == 0){
 			printf("[system]接收到视频数据\n");
+
 			handle_video(fd, clients[fd].buf, recv_size);
 		}
       // }
