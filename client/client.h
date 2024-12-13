@@ -24,6 +24,7 @@ public:
   Q_INVOKABLE void sendMessage(const QString &message);
   Q_INVOKABLE void recordAndSendVideo();
   Q_INVOKABLE void receiveVideoData(const QString &prefix, const QByteArray &data);
+// Q_INVOKABLE void receiveVideo(QTcpSocket *socket, const QString &outputFilename);
   Q_INVOKABLE void startVideoPreview();
 
   QStringList messages() const;
@@ -43,7 +44,7 @@ private slots:
 
 private:
   void sendVideo(const QString &filePath);
-
+  void saveVideo(const QByteArray &videoData);        
   QProcess* videoProcess;
   QString m_status;
   QString m_username;

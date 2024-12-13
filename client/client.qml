@@ -97,6 +97,7 @@ ApplicationWindow {
 
                 // 聊天记录和输入框
                 Rectangle {
+                    width: parent.width
                     id: chatContainer
                     anchors.fill: parent
                     anchors.topMargin: 40
