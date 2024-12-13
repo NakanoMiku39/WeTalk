@@ -5,12 +5,17 @@ import com.example.chat 1.0
 
 ApplicationWindow {
     visible: true
-    width: 400
-    height: 600
+    width: 640
+    height: 480
     title: "Chat Client"
 
     Client {
         id: chatClient
+        onMessagesChanged: {
+            if(client.messages[client.messages.length - 1] === "Received a video and saved it.") {
+                playVideoButton.visible = true
+            }
+        }
     }
 
     StackView {
@@ -104,7 +109,7 @@ ApplicationWindow {
                     color: "#FFFFFF"
 
                     Column {
-                        spacing: 0
+                        spacing: 10
                         anchors.fill: parent
 
                         // 聊天记录
@@ -117,7 +122,7 @@ ApplicationWindow {
                             ListView {
                                 id: messageList
                                 width: parent.width
-                                height: parent.height
+                                height: parent.height - buttonRow.height - 20
                                 model: chatClient.messages
                                 spacing: 10
 
@@ -140,7 +145,19 @@ ApplicationWindow {
                                     }
                                 }
                             }
+
+
                         }
+
+                            // 视频播放器
+                            // VideoPlayer {
+                               //  id: videoPlayer
+                                // width: parent.width
+                                // height: 200
+                                // visible: false
+                            // }
+
+
 
                         // 输入区域
                         Rectangle {
@@ -154,7 +171,7 @@ ApplicationWindow {
                                 spacing: 10
                                 anchors.fill: parent
                                 anchors.margins: 10
-
+                                id: buttonRow
                                 TextField {
                                     id: inputField
                                     placeholderText: "Type a message..."
@@ -164,7 +181,8 @@ ApplicationWindow {
                                 Button {
                                     id: sendButton
                                     text: "Send"
-                                    width: parent.width * 0.2
+                                    width: 50
+                                    height: 50
                                     onClicked: {
                                         if (inputField.text.trim() !== "") {
                                             chatClient.sendMessage(inputField.text)
@@ -176,16 +194,28 @@ ApplicationWindow {
                                 Button {
                                     id: videoButton
                                     text: "Record Video"
-                                    width: parent.width * 0.2
+                                    width: 50
+                                    height: 50
                                     onClicked: {
                                         chatClient.recordAndSendVideo();
+                                    }
+                                }
+                                Button {
+                                    id: playVideoButton
+                                    text: "Play"
+                                    visible: true
+                                    width: 50
+                                    height: 50
+                                    onClicked: {
+                                        client.playReceivedVideo()
                                     }
                                 }
 
                                 Button {
                                     id: exitButton
                                     text: "Exit"
-                                    width: parent.width * 0.2
+                                    width: 50
+                                    height:50
                                     onClicked: {
                                         chatClient.sendMessage("quit")
                                         Qt.quit() // 退出应用
@@ -198,4 +228,14 @@ ApplicationWindow {
             }
         }
     }
+    // 处理视频接收的信号
+    //    Connections {
+       //     target: chatClient
+
+         //   function onVideoReceived(filePath) {
+         //       videoPlayer.visible = true
+           //     videoPlayer.playVideo(filePath)
+            //}
+        //}
+
 }

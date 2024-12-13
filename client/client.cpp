@@ -289,12 +289,28 @@ void Client::saveVideo(const QByteArray &videoData) {
         qDebug() << "Video saved to received_video.mp4";
 
         m_messages.append("Received a video and saved it.");
-        emit messagesChanged();
+
     } else {
         qDebug() << "Failed to save video to file.";
     }
 }
 
+void Client::playReceivedVideo() {
+    // 调用外部播放器播放视频
+    QString videoPath = "received_video.mp4";
+    QString playerCommand = "ffplay";
+
+    QStringList arguments;
+    arguments << videoPath;
+
+    qDebug() << "Playing video using " << playerCommand;
+
+    videoProcess->start(playerCommand, arguments);
+
+    if (!videoProcess->waitForStarted()) {
+        qDebug() << "Failed to start video player.";
+    }
+}
 
 
 // 保存视频文件并重置状态
@@ -350,6 +366,7 @@ void Client::onMessageReceived() {
       qDebug() << "Video Received!" ;
       QByteArray videoData = line.mid(7);
       receiveVideoData(videoData);
+      emit messagesChanged();
     } else if(strncmp(line, "[TEXT]", 6) == 0) {
       QString text = QString::fromUtf8(line).trimmed();
       qDebug() << "Text Received!";

@@ -26,15 +26,18 @@ public:
   Q_INVOKABLE void receiveVideoData(const QByteArray &data);
 // Q_INVOKABLE void receiveVideo(QTcpSocket *socket, const QString &outputFilename);
   Q_INVOKABLE void startVideoPreview();
+  Q_INVOKABLE void playReceivedVideo();
 
   QStringList messages() const;
   QString status() const;
   bool connected() const;
 
+  void playVideo(const QString& filePath);
 signals:
   void messagesChanged();
   void statusChanged();
   void connectedChanged();
+  void videoReceived(const QString& filePath);
 
 private slots:
   void onConnected();
