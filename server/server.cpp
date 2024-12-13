@@ -385,7 +385,7 @@ void handle_video(int fd, char *clientBuf) {
 
     // 向所有客户端一次性发送完整数据
     for (int i = 0; i < SEM_SIZE; i++) {
-        if (cli_fd[i] > 0 && cli_fd[i] != fd) {
+        if (cli_fd[i] > 0) {
             printf("Forwarding video to client %d\n", cli_fd[i]);
 
             ssize_t bytesSent = write(cli_fd[i], sendBuffer, totalLength);

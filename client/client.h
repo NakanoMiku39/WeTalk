@@ -23,7 +23,7 @@ public:
   Q_INVOKABLE void connectToServer(const QString &ip, quint16 port);
   Q_INVOKABLE void sendMessage(const QString &message);
   Q_INVOKABLE void recordAndSendVideo();
-  Q_INVOKABLE void receiveVideoData(const QString &prefix, const QByteArray &data);
+  Q_INVOKABLE void receiveVideoData(const QByteArray &data);
 // Q_INVOKABLE void receiveVideo(QTcpSocket *socket, const QString &outputFilename);
   Q_INVOKABLE void startVideoPreview();
 
