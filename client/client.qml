@@ -217,7 +217,7 @@ ApplicationWindow {
                                     width: 50
                                     height:50
                                     onClicked: {
-                                        chatClient.sendMessage("quit")
+                                        chatClient.sendMessage("[CMD]")
                                         Qt.quit() // 退出应用
                                     }
                                 }

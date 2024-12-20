@@ -40,8 +40,14 @@ bool Client::connected() const {
 
 void Client::sendMessage(const QString &message) {
   if(socket->state() == QTcpSocket::ConnectedState) {
+    if(message != "[CMD]"){
     QString formattedMessage = "[TEXT]" + message + "\n";
     socket->write(formattedMessage.toUtf8());
+    }
+    else{
+	QString formattedMessage = message + "\n";
+	socket->write(formattedMessage.toUtf8());
+    }
   }
 
 }
@@ -58,7 +64,7 @@ void Client::recordAndSendVideo() {
 disconnect(videoProcess, nullptr, this, nullptr);
   QString outputFile = "video_output.mp4";
   QString command = "ffmpeg";
-  QStringList args = {"-y", "-f", "v4l2", "-input_format", "mjpeg", "-i", "/dev/video0", "-t", "5", outputFile };
+  QStringList args = {"-y", "-f", "v4l2", "-input_format", "mjpeg", "-i", "/dev/video0", "-t", "10", outputFile };
 
 videoProcess->start(command, args);
   connect(videoProcess, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), this, [=](int exitCode, QProcess::ExitStatus status) {
@@ -103,115 +109,6 @@ void Client::sendVideo(const QString &filePath) {
     // Send the [/VIDEO] suffix
     qDebug() << "Video data sent.";
 }
-
-// void Client::receiveVideoData(const QString &prefix, const QByteArray &data) {
-//   printf("Video Received\n");
-//     QFile videoFile("received_video.mp4");
-//     if(videoFile.open(QIODevice::WriteOnly)) {
-//       videoFile.write(data);
-//       videoFile.close();
-//       qDebug() << "Video saved to received_video.mp4";
-//       m_messages.append("Received a video and saved it.");
-//       emit messagesChanged();
-//     }
-
-// }
-
-// void Client::receiveVideoData(const QString &prefix, const QByteArray &data) {
-//     qDebug() << "Video Received\n";
-
-//     // 1. 先找到分隔符（即大小信息结束的位置）
-//     QByteArray sizeHeader = "[VIDEO]";
-//     QByteArray delimiter = ";";  // 用 ";" 来分隔视频大小和视频数据
-
-//     // 找到分隔符的位置
-//     int delimiterIndex = data.indexOf(delimiter);
-//     if (delimiterIndex == -1) {
-//         qDebug() << "Error: Delimiter not found!";
-//         return;
-//     }
-
-//     // 2. 提取视频大小信息（位于 ";" 之前）
-//     QByteArray sizeData = data.left(delimiterIndex);  // 获取大小信息
-//     int videoSize = sizeData.toInt();  // 转换为整数表示视频大小
-//     qDebug() << "Video size received: " << videoSize;
-
-//     // 3. 提取视频内容（从 ";" 后面开始）
-//     QByteArray videoData = data.mid(delimiterIndex + 1);  // 获取实际的视频数据
-
-//     // 4. 检查视频数据是否和视频大小匹配
-//     if (videoData.size() != videoSize) {
-//         qDebug() << "Error: Received video data size does not match the declared size!";
-//         return;
-//     }
-
-//     // 5. 将视频数据保存到文件
-//     QFile videoFile("received_video.mp4");
-//     if (videoFile.open(QIODevice::WriteOnly)) {
-//         videoFile.write(videoData);  // 写入视频数据
-//         videoFile.close();
-//         qDebug() << "Video saved to received_video.mp4";
-
-//         m_messages.append("Received a video and saved it.");
-//         emit messagesChanged();
-//     } else {
-//         qDebug() << "Failed to save video to file.";
-//     }
-
-//     qDebug() << "Video data received and saved successfully.";
-// }
-// void Client::receiveVideoData(const QString &prefix, const QByteArray &data) {
-//     static bool receivingVideo = false;      // 标识是否正在接收视频数据
-//     static int expectedVideoSize = 0;        // 期望接收的视频数据大小
-//     static int receivedSize = 0;             // 已接收到的视频数据大小
-//     static QByteArray videoBuffer;           // 用于存储接收到的视频数据
-
-
-//     // 检查数据是否包含 [VIDEO] 前缀
-//     qDebug() << "entering receiving condition!";
-//     int delimiterIndex = data.indexOf(';');
-
-//     if (delimiterIndex == -1) {
-//       qDebug() << "Error: Delimiter not found in video header!";
-//       return;
-//     }
-
-//     // 提取视频大小信息
-//     QByteArray sizeData = data.mid(0, delimiterIndex);
-//     expectedVideoSize = sizeData.toInt();
-//     qDebug() << "Video size to receive: " << expectedVideoSize;
-
-//     // 提取第一个数据块（分隔符之后的视频数据）
-//     QByteArray initialVideoData = data.mid(delimiterIndex + 1);
-//     videoBuffer.clear();
-//     videoBuffer.append(initialVideoData);
-//     receivedSize = initialVideoData.size();
-
-//     receivingVideo = true;
-
-//     qDebug() << "Initial video data received: " << receivedSize << " bytes";
-
-//     // 持续循环接收数据，直到接收到完整的视频数据
-//     while (receivingVideo /*&& socket->bytesAvailable() > 0*/) {
-//         QByteArray newData = socket->readAll();
-//         videoBuffer.append(newData);
-//         receivedSize += newData.size();
-//         qDebug() << "Received additional video data: " << newData.size() << " bytes, Total: " << receivedSize << " bytes";
-
-
-//         // 检查是否接收到完整的视频数据
-//         if (receivedSize >= expectedVideoSize) {
-//             saveVideo(videoBuffer);
-//             receivingVideo = false;
-//             expectedVideoSize = 0;
-//             receivedSize = 0;
-
-//             videoBuffer.clear();
-
-//             qDebug() << "Video reception completed.";
-//         }
-//     }
-// }
 
 void Client::receiveVideoData(const QByteArray &data) {
     static bool receivingVideo = false;      // 标识是否正在接收视频数据
@@ -370,7 +267,7 @@ void Client::onMessageReceived() {
     } else if(strncmp(line, "[TEXT]", 6) == 0) {
       QString text = QString::fromUtf8(line).trimmed();
       qDebug() << "Text Received!";
-      m_messages.append(line);
+      m_messages.append(line.mid(6));
       emit messagesChanged();
     } else {
       // qDebug() << "Failed to receive!";

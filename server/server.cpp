@@ -302,7 +302,7 @@ struct client clients[SEM_SIZE];
 //     printf("[system] Video forwarded to all clients\n");
 // }
 
-void handle_video(int fd, char *clientBuf) {
+void handle_video(int fd, char *clientBuf, int recv_size) {
     // 打开文件以写入接收到的视频数据
     FILE *file = fopen("received_video.mp4", "wb");
     if (!file) {
@@ -342,8 +342,9 @@ void handle_video(int fd, char *clientBuf) {
     }
 
     // 将头部后的视频数据复制到 videoBuffer
-    memcpy(videoBuffer, startOfVideoData, videoDataInFirstBuffer);
-    int totalBytesRead = videoDataInFirstBuffer;
+    int prefixSize = 7 + log10(videoSize) + 2;
+    memcpy(videoBuffer, startOfVideoData, recv_size - prefixSize);
+    int totalBytesRead = recv_size - prefixSize;
 
     // 继续读取剩余的视频数据
     while (totalBytesRead < videoSize) {
@@ -496,7 +497,7 @@ void *server(void *arg) {
     printf("What did I recieved from clients: %s\n", clients[fd].buf);
     // 收到退出请求
 
-    if (recv_size <= 0 || strncmp(clients[fd].buf, "[CMD] ", 6) == 0) {
+    if (recv_size <= 0 || strncmp(clients[fd].buf, "[CMD]", 5) == 0) {
       sprintf(ts, "[system]欢送 %s 离开群聊\n", clients[fd].name);
 
       int index = 0;
@@ -553,7 +554,7 @@ void *server(void *arg) {
 		} else if(strncmp(clients[fd].buf, "[VIDEO]", 7) == 0){
 			printf("[system]接收到视频数据\n");
 
-			handle_video(fd, clients[fd].buf);
+			handle_video(fd, clients[fd].buf, recv_size);
 		}
 
       // }
@@ -667,6 +668,7 @@ int main()
 			// 创建线程客户端
 			pthread_t tid;
 			pthread_create(&tid, NULL, server, &cli_fd[index]);
+            //pthread_join(tid, NULL);
 		}
 
 	}
